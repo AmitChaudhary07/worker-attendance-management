@@ -9,10 +9,20 @@ function AttendanceTracker({ workerId }) {
   // Get dates for the current week starting from Thursday
   function getWeekDates(date = new Date()) {
     const thursday = new Date(date)
-    const day = thursday.getDay()
-    // Adjust to previous Thursday if needed
+    const currentThursday = new Date()
+    const day = currentThursday.getDay()
     const diff = day >= 4 ? day - 4 : day + 3
-    thursday.setDate(thursday.getDate() - diff)
+    currentThursday.setDate(currentThursday.getDate() - diff)
+    currentThursday.setHours(0, 0, 0, 0)
+
+    // If requested date is before current Thursday, return current week
+    if (date < currentThursday) {
+      date = new Date()
+    }
+
+    const targetDay = thursday.getDay()
+    const targetDiff = targetDay >= 4 ? targetDay - 4 : targetDay + 3
+    thursday.setDate(thursday.getDate() - targetDiff)
 
     const week = []
     for (let i = 0; i < 7; i++) {
@@ -33,39 +43,114 @@ function AttendanceTracker({ workerId }) {
   }
 
   const handlePreviousWeek = () => {
-    const prevWeek = new Date(currentWeek[0])
-    prevWeek.setDate(prevWeek.getDate() - 7)
-    setCurrentWeek(getWeekDates(prevWeek))
+    const currentThursday = new Date()
+    const day = currentThursday.getDay()
+    const diff = day >= 4 ? day - 4 : day + 3
+    currentThursday.setDate(currentThursday.getDate() - diff)
+    currentThursday.setHours(0, 0, 0, 0)
+
+    const weekStart = new Date(currentWeek[0])
+    weekStart.setHours(0, 0, 0, 0)
+
+    // Only allow going back if we're not already at current week
+    if (weekStart.getTime() > currentThursday.getTime()) {
+      const prevWeek = new Date(currentWeek[0])
+      prevWeek.setDate(prevWeek.getDate() - 7)
+      setCurrentWeek(getWeekDates(prevWeek))
+    }
   }
 
   const handleNextWeek = () => {
-    const nextWeek = new Date(currentWeek[0])
-    nextWeek.setDate(nextWeek.getDate() + 7)
-    setCurrentWeek(getWeekDates(nextWeek))
+    const currentThursday = new Date()
+    const day = currentThursday.getDay()
+    const diff = day >= 4 ? day - 4 : day + 3
+    currentThursday.setDate(currentThursday.getDate() - diff)
+    currentThursday.setHours(0, 0, 0, 0)
+
+    const weekStart = new Date(currentWeek[0])
+    weekStart.setHours(0, 0, 0, 0)
+
+    // Only allow going forward if we're not already one week ahead
+    if (weekStart.getTime() < currentThursday.getTime() + 7 * 24 * 60 * 60 * 1000) {
+      const nextWeek = new Date(currentWeek[0])
+      nextWeek.setDate(nextWeek.getDate() + 7)
+      setCurrentWeek(getWeekDates(nextWeek))
+    }
   }
 
-  const handleAttendanceClick = (date) => {
+  // Add useEffect to fetch attendance when week or worker changes
+  useEffect(() => {
     if (!workerId) return
 
-    // Prevent setting attendance for future dates
+    const fetchAttendance = async () => {
+      setLoading(true)
+      try {
+        const startDate = currentWeek[0].toISOString().split('T')[0]
+        const endDate = currentWeek[6].toISOString().split('T')[0]
+        
+        const response = await fetch(
+          `http://localhost:3000/api/attendance/${workerId}?startDate=${startDate}&endDate=${endDate}`
+        )
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch attendance')
+        }
+        
+        const data = await response.json()
+        setAttendance(data)
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching attendance:', err)
+        setError('Failed to load attendance data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAttendance()
+  }, [workerId, currentWeek])
+
+  // Update handleAttendanceClick to save to database
+  const handleAttendanceClick = async (date) => {
+    if (!workerId) return
+
     const today = new Date()
-    today.setHours(0, 0, 0, 0) // Reset time part for accurate date comparison
+    today.setHours(0, 0, 0, 0)
     const clickedDate = new Date(date)
     clickedDate.setHours(0, 0, 0, 0)
 
-    if (clickedDate > today) {
-      return // Silently return if future date
-    }
+    if (clickedDate > today) return
 
     const dateStr = date.toISOString().split('T')[0]
     const currentStatus = attendance[dateStr] || 'absent'
     const newStatus = currentStatus === 'absent' ? 'present' : 
                      currentStatus === 'present' ? 'half' : 'absent'
 
-    setAttendance(prev => ({
-      ...prev,
-      [dateStr]: newStatus
-    }))
+    try {
+      const response = await fetch(`http://localhost:3000/api/attendance/${workerId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: dateStr,
+          status: newStatus
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update attendance')
+      }
+
+      setAttendance(prev => ({
+        ...prev,
+        [dateStr]: newStatus
+      }))
+      setError(null)
+    } catch (err) {
+      console.error('Error updating attendance:', err)
+      setError('Failed to update attendance')
+    }
   }
 
   const getAttendanceColor = (status) => {
@@ -83,13 +168,26 @@ function AttendanceTracker({ workerId }) {
     return <p className="text-gray-500">Select a worker to view attendance</p>
   }
 
+  if (loading) {
+    return <p className="text-gray-500">Loading attendance data...</p>
+  }
+
+  if (error) {
+    return <p className="text-red-500">{error}</p>
+  }
+
   return (
     <div className="space-y-4">
       {/* Week Navigation */}
       <div className="flex justify-between items-center mb-4">
         <button
           onClick={handlePreviousWeek}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+          disabled={currentWeek[0].getTime() <= getWeekDates()[0].getTime()}
+          className={`px-3 py-1 text-white rounded-lg transition-colors ${
+            currentWeek[0].getTime() <= getWeekDates()[0].getTime()
+              ? 'bg-gray-600 cursor-not-allowed opacity-50'
+              : 'bg-gray-700 hover:bg-gray-600'
+          }`}
         >
           Previous Week
         </button>
@@ -98,7 +196,12 @@ function AttendanceTracker({ workerId }) {
         </span>
         <button
           onClick={handleNextWeek}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+          disabled={currentWeek[0].getTime() >= getWeekDates()[0].getTime() + 7 * 24 * 60 * 60 * 1000}
+          className={`px-3 py-1 text-white rounded-lg transition-colors ${
+            currentWeek[0].getTime() >= getWeekDates()[0].getTime() + 7 * 24 * 60 * 60 * 1000
+              ? 'bg-gray-600 cursor-not-allowed opacity-50'
+              : 'bg-gray-700 hover:bg-gray-600'
+          }`}
         >
           Next Week
         </button>

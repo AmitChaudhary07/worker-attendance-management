@@ -127,7 +127,11 @@ function WorkerList({ onSelectWorker, selectedWorker }) {
           <div className="flex justify-between items-start">
             <div onClick={() => onSelectWorker(worker)} className="flex-1">
               <p className="font-medium text-white">{worker.name}</p>
-              <p className="text-sm text-gray-400">{worker.designation}</p>
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <span>{worker.designation}</span>
+                <span>•</span>
+                <span>₹{worker.daily_wage}/day</span>
+              </div>
               <span className={`text-xs px-2 py-1 rounded-full ${
                 worker.status === 'Active' 
                   ? 'bg-green-900 text-green-300' 

@@ -26,7 +26,7 @@ function App() {
               <div className="space-y-2 text-gray-300">
                 <p>Name: {selectedWorker.name}</p>
                 <p>Mobile: {selectedWorker.mobile}</p>
-                <p>Daily Wage: ₹{selectedWorker.dailyWage}</p>
+                <p>Daily Wage: ₹{selectedWorker.daily_wage}</p>
                 <p>Designation: {selectedWorker.designation}</p>
               </div>
             ) : (
