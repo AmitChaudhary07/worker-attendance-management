@@ -90,6 +90,50 @@ app.delete('/api/workers/:id', async (req, res) => {
   }
 })
 
+// Get attendance for a worker within a date range
+app.get('/api/attendance/:workerId', async (req, res) => {
+  const { workerId } = req.params
+  const { startDate, endDate } = req.query
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT date, status FROM attendance WHERE worker_id = ? AND date BETWEEN ? AND ?',
+      [workerId, startDate, endDate]
+    )
+    
+    // Convert to object format for easier frontend handling
+    const attendance = rows.reduce((acc, row) => {
+      acc[row.date.toISOString().split('T')[0]] = row.status
+      return acc
+    }, {})
+    
+    res.json(attendance)
+  } catch (error) {
+    console.error('Error fetching attendance:', error)
+    res.status(500).json({ error: 'Failed to fetch attendance' })
+  }
+})
+
+// Update attendance for a worker
+app.post('/api/attendance/:workerId', async (req, res) => {
+  const { workerId } = req.params
+  const { date, status } = req.body
+
+  try {
+    await pool.query(
+      `INSERT INTO attendance (worker_id, date, status) 
+       VALUES (?, ?, ?) 
+       ON DUPLICATE KEY UPDATE status = ?`,
+      [workerId, date, status, status]
+    )
+    
+    res.json({ message: 'Attendance updated successfully' })
+  } catch (error) {
+    console.error('Error updating attendance:', error)
+    res.status(500).json({ error: 'Failed to update attendance' })
+  }
+})
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
