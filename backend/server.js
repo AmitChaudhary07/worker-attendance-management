@@ -69,6 +69,27 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Server is running!' })
 })
 
+// Add this with the other routes
+app.delete('/api/workers/:id', async (req, res) => {
+  const { id } = req.params
+
+  try {
+    // First check if worker exists
+    const [worker] = await pool.query('SELECT * FROM workers WHERE id = ?', [id])
+    if (worker.length === 0) {
+      return res.status(404).json({ error: 'Worker not found' })
+    }
+
+    // Then attempt to delete
+    await pool.query('DELETE FROM workers WHERE id = ?', [id])
+    
+    res.status(200).json({ message: 'Worker deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting worker:', error)
+    res.status(500).json({ error: 'Failed to delete worker' })
+  }
+})
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
