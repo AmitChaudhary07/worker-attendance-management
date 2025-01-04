@@ -1,34 +1,53 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import WorkerList from './components/WorkerList'
+import AttendanceTracker from './components/AttendanceTracker'
+import PayoutManager from './components/PayoutManager'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [selectedWorker, setSelectedWorker] = useState(null)
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="min-h-screen bg-gray-900 p-4">
+      <div className="grid grid-cols-12 gap-4">
+        {/* Worker List Section */}
+        <div className="col-span-3 bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
+          <WorkerList 
+            onSelectWorker={setSelectedWorker}
+            selectedWorker={selectedWorker}
+          />
+        </div>
+
+        {/* Main Content Section */}
+        <div className="col-span-6 space-y-4">
+          {/* Worker Details */}
+          <div className="bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
+            <h2 className="text-lg font-semibold mb-2 text-white">Details:</h2>
+            {selectedWorker ? (
+              <div className="space-y-2 text-gray-300">
+                <p>Name: {selectedWorker.name}</p>
+                <p>Mobile: {selectedWorker.mobile}</p>
+                <p>Daily Wage: ₹{selectedWorker.dailyWage}</p>
+                <p>Designation: {selectedWorker.designation}</p>
+              </div>
+            ) : (
+              <p className="text-gray-500">Select a worker to view details</p>
+            )}
+          </div>
+
+          {/* Attendance Section */}
+          <div className="bg-gray-800 rounded-lg shadow-lg p-4 flex-grow border border-gray-700">
+            <h2 className="text-lg font-semibold mb-2 text-white">Attendance (Weekly basis)</h2>
+            <AttendanceTracker workerId={selectedWorker?.id} />
+          </div>
+        </div>
+
+        {/* Payout Section */}
+        <div className="col-span-3 bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
+          <h2 className="text-lg font-semibold mb-4 text-white">Payout Info</h2>
+          <PayoutManager workerId={selectedWorker?.id} />
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </div>
   )
 }
 
