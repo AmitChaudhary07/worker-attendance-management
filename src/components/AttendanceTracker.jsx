@@ -124,8 +124,7 @@ function AttendanceTracker({ workerId }) {
     const dateStr = date.toISOString().split('T')[0]
     const currentStatus = attendance[dateStr] || 'absent'
     const newStatus = currentStatus === 'absent' ? 'present' : 
-                     currentStatus === 'present' ? 'half' : 
-                     currentStatus === 'half' ? 'fullhalf' : 'absent'
+                     currentStatus === 'present' ? 'half' : 'absent'
 
     try {
       const response = await fetch(`http://localhost:3000/api/attendance/${workerId}`, {
@@ -160,8 +159,6 @@ function AttendanceTracker({ workerId }) {
         return 'bg-green-500 hover:bg-green-600'
       case 'half':
         return 'bg-yellow-500 hover:bg-yellow-600'
-      case 'fullhalf':
-        return 'bg-purple-500 hover:bg-purple-600'
       default:
         return 'bg-red-500 hover:bg-red-600'
     }
@@ -260,10 +257,6 @@ function AttendanceTracker({ workerId }) {
         <div className="flex items-center">
           <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
           <span className="text-sm text-gray-300">Half Day</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-purple-500 rounded mr-2"></div>
-          <span className="text-sm text-gray-300">Full + Half</span>
         </div>
         <div className="flex items-center">
           <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
