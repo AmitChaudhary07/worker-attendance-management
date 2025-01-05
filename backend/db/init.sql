@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     id INT PRIMARY KEY AUTO_INCREMENT,
     worker_id INT NOT NULL,
     date DATE NOT NULL,
-    status ENUM('present', 'half', 'absent') NOT NULL DEFAULT 'absent',
+    status ENUM('present', 'half', 'absent', 'fullhalf') NOT NULL DEFAULT 'absent',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE,
