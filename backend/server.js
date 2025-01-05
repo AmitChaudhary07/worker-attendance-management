@@ -82,6 +82,7 @@ app.delete('/api/workers/:id', async (req, res) => {
 
     // Then attempt to delete
     await pool.query('DELETE FROM workers WHERE id = ?', [id])
+    // Due to ON DELETE CASCADE, all attendance records for this worker are automatically deleted
     
     res.status(200).json({ message: 'Worker deleted successfully' })
   } catch (error) {
