@@ -16,6 +16,7 @@ services:
 
     volumes:
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
 
     networks:
       - wam-app
@@ -81,7 +82,7 @@ services:
       start_period: 60s
 
 volumes:
-  mysql:
+  mysql_data:
 
 networks:
   wam-app:

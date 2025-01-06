@@ -118,7 +118,7 @@ function AttendanceTracker({ workerId }) {
     }
   }, [workerId, currentWeek])
 
-  // Update handleAttendanceClick to save to database
+  // Add handleAttendanceClick function after the useEffect hook
   const handleAttendanceClick = async (date) => {
     if (!workerId) return
 
@@ -131,8 +131,7 @@ function AttendanceTracker({ workerId }) {
 
     const dateStr = date.toISOString().split('T')[0]
     const currentStatus = attendance[dateStr] || 'absent'
-    const newStatus = currentStatus === 'absent' ? 'present' : 
-                     currentStatus === 'present' ? 'half' : 'absent'
+    const newStatus = STATUS_CYCLE[currentStatus]
 
     try {
       const response = await fetch(`http://localhost:3000/api/attendance/${workerId}`, {
@@ -161,15 +160,34 @@ function AttendanceTracker({ workerId }) {
     }
   }
 
+  // Add status cycle configuration with defined order
+  const STATUS_ORDER = ['present', 'half', 'full_plus_half', 'absent']
+
+  const STATUS_CYCLE = {
+    absent: 'present',
+    present: 'half',
+    half: 'full_plus_half',
+    full_plus_half: 'absent'
+  }
+
+  // Update getAttendanceColor function with status configuration
+  const STATUS_COLORS = {
+    present: 'bg-green-500 hover:bg-green-600',
+    half: 'bg-yellow-500 hover:bg-yellow-600',
+    full_plus_half: 'bg-purple-500 hover:bg-purple-600',
+    absent: 'bg-red-500 hover:bg-red-600'
+  }
+
   const getAttendanceColor = (status) => {
-    switch (status) {
-      case 'present':
-        return 'bg-green-500 hover:bg-green-600'
-      case 'half':
-        return 'bg-yellow-500 hover:bg-yellow-600'
-      default:
-        return 'bg-red-500 hover:bg-red-600'
-    }
+    return STATUS_COLORS[status] || STATUS_COLORS.absent
+  }
+
+  // Add status display configuration
+  const STATUS_DISPLAY = {
+    present: 'Present',
+    half: 'Half Day',
+    full_plus_half: 'Full + Half',
+    absent: 'Absent'
   }
 
   if (!workerId) {
@@ -249,27 +267,21 @@ function AttendanceTracker({ workerId }) {
             >
               <span className="text-white font-medium">{date.getDate()}</span>
               <span className="text-xs text-white capitalize">
-                {isDisabled ? 'upcoming' : status}
+                {isDisabled ? 'upcoming' : STATUS_DISPLAY[status]}
               </span>
             </div>
           )
         })}
       </div>
 
-      {/* Legend */}
+      {/* Legend with preserved order */}
       <div className="flex justify-center space-x-4 mt-4">
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
-          <span className="text-sm text-gray-300">Present</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
-          <span className="text-sm text-gray-300">Half Day</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
-          <span className="text-sm text-gray-300">Absent</span>
-        </div>
+        {STATUS_ORDER.map(status => (
+          <div key={status} className="flex items-center">
+            <div className={`w-4 h-4 ${STATUS_COLORS[status].split(' ')[0]} rounded mr-2`}></div>
+            <span className="text-sm text-gray-300">{STATUS_DISPLAY[status]}</span>
+          </div>
+        ))}
       </div>
     </div>
   )
