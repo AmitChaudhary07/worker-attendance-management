@@ -8,26 +8,22 @@ function AttendanceTracker({ workerId }) {
 
   // Get dates for the current week starting from Thursday
   function getWeekDates(date = new Date()) {
-    const thursday = new Date(date)
-    const currentThursday = new Date()
-    const day = currentThursday.getDay()
+    // Normalize the input date to midnight UTC
+    const normalizedDate = new Date(Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    ))
+    
+    const thursday = new Date(normalizedDate)
+    const day = thursday.getUTCDay()
     const diff = day >= 4 ? day - 4 : day + 3
-    currentThursday.setDate(currentThursday.getDate() - diff)
-    currentThursday.setHours(0, 0, 0, 0)
-
-    // If requested date is before current Thursday, return current week
-    if (date < currentThursday) {
-      date = new Date()
-    }
-
-    const targetDay = thursday.getDay()
-    const targetDiff = targetDay >= 4 ? targetDay - 4 : targetDay + 3
-    thursday.setDate(thursday.getDate() - targetDiff)
+    thursday.setUTCDate(thursday.getUTCDate() - diff)
 
     const week = []
     for (let i = 0; i < 7; i++) {
       const currentDate = new Date(thursday)
-      currentDate.setDate(thursday.getDate() + i)
+      currentDate.setUTCDate(thursday.getUTCDate() + i)
       week.push(currentDate)
     }
     return week
@@ -81,7 +77,9 @@ function AttendanceTracker({ workerId }) {
   // Add useEffect to fetch attendance when week or worker changes
   useEffect(() => {
     if (!workerId) return
-
+    
+    let isSubscribed = true
+    
     const fetchAttendance = async () => {
       setLoading(true)
       try {
@@ -97,17 +95,27 @@ function AttendanceTracker({ workerId }) {
         }
         
         const data = await response.json()
-        setAttendance(data)
-        setError(null)
+        if (isSubscribed) {
+          setAttendance(data)
+          setError(null)
+        }
       } catch (err) {
-        console.error('Error fetching attendance:', err)
-        setError('Failed to load attendance data')
+        if (isSubscribed) {
+          console.error('Error fetching attendance:', err)
+          setError('Failed to load attendance data')
+        }
       } finally {
-        setLoading(false)
+        if (isSubscribed) {
+          setLoading(false)
+        }
       }
     }
 
     fetchAttendance()
+    
+    return () => {
+      isSubscribed = false
+    }
   }, [workerId, currentWeek])
 
   // Update handleAttendanceClick to save to database

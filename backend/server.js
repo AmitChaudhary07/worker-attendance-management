@@ -20,6 +20,12 @@ const pool = mysql.createPool({
   queueLimit: 0
 })
 
+// Add connection error handling
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle MySQL connection:', err)
+  process.exit(1)
+})
+
 // Get all workers
 app.get('/api/workers', async (req, res) => {
   try {
@@ -110,7 +116,11 @@ app.get('/api/attendance/:workerId', async (req, res) => {
     res.json(attendance)
   } catch (error) {
     console.error('Error fetching attendance:', error)
-    res.status(500).json({ error: 'Failed to fetch attendance' })
+    res.status(500).json({ 
+      error: 'Failed to fetch attendance',
+      details: error.message,
+      code: error.code 
+    })
   }
 })
 
