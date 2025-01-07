@@ -203,6 +203,34 @@ app.patch('/api/workers/:id/payment', async (req, res) => {
   }
 })
 
+// Add this near the other routes
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy' })
+})
+
+// Add this new endpoint for processing payouts
+app.post('/api/workers/:id/process-payout', async (req, res) => {
+  const { id } = req.params
+  const { amount, weekStart, weekEnd } = req.body
+
+  try {
+    // You might want to store processed payouts in a new table
+    const [result] = await pool.query(
+      `INSERT INTO processed_payouts (worker_id, amount, week_start, week_end) 
+       VALUES (?, ?, ?, ?)`,
+      [id, amount, weekStart, weekEnd]
+    )
+    
+    res.json({ 
+      message: 'Payout processed successfully',
+      payoutId: result.insertId 
+    })
+  } catch (error) {
+    console.error('Error processing payout:', error)
+    res.status(500).json({ error: 'Failed to process payout' })
+  }
+})
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
