@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 
 function PayoutManager({ workerId }) {
   const [workerData, setWorkerData] = useState(null)
@@ -6,6 +6,76 @@ function PayoutManager({ workerId }) {
   const [error, setError] = useState(null)
   const [isEditing, setIsEditing] = useState({ advance: false, remaining: false })
   const [editValues, setEditValues] = useState({ advance: '', remaining: '' })
+  const [weeklyPayout, setWeeklyPayout] = useState(0)
+  const [currentWeek, setCurrentWeek] = useState(getWeekDates())
+
+  function getWeekDates(date = new Date()) {
+    const normalizedDate = new Date(Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    ))
+    
+    const thursday = new Date(normalizedDate)
+    const day = thursday.getUTCDay()
+    const diff = day >= 4 ? day - 4 : day + 3
+    thursday.setUTCDate(thursday.getUTCDate() - diff)
+
+    const week = []
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(thursday)
+      currentDate.setUTCDate(thursday.getUTCDate() + i)
+      week.push(currentDate)
+    }
+    return week
+  }
+
+  const calculateWeeklyPayout = async () => {
+    if (!workerId || !workerData) return
+
+    try {
+      const startDate = currentWeek[0].toISOString().split('T')[0]
+      const endDate = currentWeek[6].toISOString().split('T')[0]
+      
+      const response = await fetch(
+        `http://localhost:3000/api/attendance/${workerId}?startDate=${startDate}&endDate=${endDate}`
+      )
+      
+      if (!response.ok) throw new Error('Failed to fetch attendance')
+      
+      const attendanceData = await response.json()
+      
+      let presentDays = 0
+      let halfDays = 0
+      let fullPlusHalfDays = 0
+      
+      Object.values(attendanceData).forEach(status => {
+        switch(status) {
+          case 'present':
+            presentDays++
+            break
+          case 'half':
+            halfDays++
+            break
+          case 'full_plus_half':
+            fullPlusHalfDays++
+            break
+        }
+      })
+      
+      const dailyWage = workerData.daily_wage
+      const payout = (
+        (dailyWage * presentDays) + 
+        ((dailyWage/2) * halfDays) + 
+        (fullPlusHalfDays * 1.5 * dailyWage)
+      )
+      
+      setWeeklyPayout(payout)
+    } catch (err) {
+      console.error('Error calculating payout:', err)
+      setError('Failed to calculate payout')
+    }
+  }
 
   useEffect(() => {
     if (!workerId) return
@@ -155,13 +225,17 @@ function PayoutManager({ workerId }) {
 
       {/* This Week's Payout */}
       <div className="p-4 bg-gray-700 rounded-lg">
-        <p className="font-medium text-gray-300">This Week's Payout</p>
-        <p className="text-2xl font-bold text-white">₹0</p>
+        <div className="flex justify-between items-center mb-2">
+          <p className="font-medium text-gray-300">This Week's Payout</p>
+          <button
+            onClick={calculateWeeklyPayout}
+            className="text-blue-400 hover:text-blue-300 text-sm"
+          >
+            Calculate
+          </button>
+        </div>
+        <p className="text-2xl font-bold text-white">₹{weeklyPayout.toFixed(2)}</p>
       </div>
-
-      <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors">
-        Process Payout
-      </button>
     </div>
   )
 }

@@ -21,3 +21,13 @@ CREATE TABLE IF NOT EXISTS attendance (
     FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE,
     UNIQUE KEY unique_attendance (worker_id, date)
 ); 
+
+CREATE TABLE IF NOT EXISTS processed_payouts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    worker_id INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    week_start DATE NOT NULL,
+    week_end DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE
+); 
