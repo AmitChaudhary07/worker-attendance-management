@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS workers (
     mobile VARCHAR(10) NOT NULL,
     daily_wage DECIMAL(10,2) NOT NULL,
     designation VARCHAR(100) NOT NULL,
+    advance DECIMAL(10,2) DEFAULT 0.00,
+    remaining DECIMAL(10,2) DEFAULT 0.00,
     status ENUM('Active', 'Inactive') DEFAULT 'Active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
