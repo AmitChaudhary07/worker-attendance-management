@@ -144,6 +144,65 @@ app.post('/api/attendance/:workerId', async (req, res) => {
   }
 })
 
+// Add this with the other routes
+app.get('/api/workers/:id', async (req, res) => {
+  const { id } = req.params
+
+  try {
+    const [rows] = await pool.query('SELECT * FROM workers WHERE id = ?', [id])
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Worker not found' })
+    }
+    
+    res.json(rows[0])
+  } catch (error) {
+    console.error('Error fetching worker:', error)
+    res.status(500).json({ error: 'Failed to fetch worker details' })
+  }
+})
+
+// Add this with the other routes
+app.patch('/api/workers/:id/payment', async (req, res) => {
+  const { id } = req.params
+  const updates = req.body
+
+  try {
+    // Validate that we're only updating allowed fields
+    const allowedFields = ['advance', 'remaining']
+    const updateFields = Object.keys(updates)
+    const isValidOperation = updateFields.every(field => allowedFields.includes(field))
+
+    if (!isValidOperation) {
+      return res.status(400).json({ error: 'Invalid updates!' })
+    }
+
+    // Build the SQL query dynamically based on what fields are being updated
+    const updateQuery = `
+      UPDATE workers 
+      SET ${updateFields.map(field => `${field} = ?`).join(', ')}
+      WHERE id = ?
+    `
+    
+    // Create array of values for the query
+    const values = [...updateFields.map(field => updates[field]), id]
+    
+    await pool.query(updateQuery, values)
+    
+    // Fetch and return updated worker data
+    const [updated] = await pool.query('SELECT * FROM workers WHERE id = ?', [id])
+    
+    if (updated.length === 0) {
+      return res.status(404).json({ error: 'Worker not found' })
+    }
+    
+    res.json(updated[0])
+  } catch (error) {
+    console.error('Error updating payment:', error)
+    res.status(500).json({ error: 'Failed to update payment details' })
+  }
+})
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
