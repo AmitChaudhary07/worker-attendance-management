@@ -1,26 +1,29 @@
-FROM node:22.12.0 AS build
+# Base image for building the app
+FROM node:22.12.0-slim AS build
 
-# Initialize Working directory
-WORKDIR dependancies/
+WORKDIR /app
 
-# Copy the dependancy files
-COPY package*.json /dependancies/
-
-# Install dependancies
+# Copy package files and install dependencies
+COPY package*.json ./
 RUN npm install
-RUN npm audit fix
 
-# Stage 2
-# Initialize base image
-FROM node:22.12.0-slim
-
-WORKDIR app/
-
-COPY --from=build /dependancies/node_modules/ /app/node_modules/
-
-# Copy rest of the project files
+# Copy the entire app and build it
 COPY . .
+RUN npm run build
 
-# Run the app in dev mode
-ENTRYPOINT ["npm"]
-CMD ["run","dev"]
+# Use a lightweight HTTP server to serve static files
+FROM node:22.12.0-alpine
+
+WORKDIR /app
+
+# Install a lightweight server (e.g., `http-server`)
+RUN npm install -g http-server
+
+# Copy the build files from the previous stage
+COPY --from=build /app/dist /app
+
+# Expose the port
+EXPOSE 8080
+
+# Run the HTTP server
+CMD ["http-server", "-p", "8080"]
