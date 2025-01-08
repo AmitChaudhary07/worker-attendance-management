@@ -67,7 +67,7 @@ services:
       context: .
 
     ports:
-      - "5173:5173"
+      - "8080:8080"
 
     networks:
       - wam-app
@@ -75,7 +75,7 @@ services:
     restart: always
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5173/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
