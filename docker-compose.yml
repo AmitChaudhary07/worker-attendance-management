@@ -1,88 +1,41 @@
 version: '3.8'
 
 services:
-  mysql:
-    container_name: mysql
-    image: mysql
-
-    environment:
-      MYSQL_ROOT_PASSWORD: "root"
-      MYSQL_USER: "ghost"
-      MYSQL_PASSWORD: "ghost"
-      MYSQL_DATABASE: "worker_attendance_management"
-
-    ports:
-      - "3306:3306"
-
-    volumes:
-      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - mysql_data:/var/lib/mysql
-
-    networks:
-      - wam-app
-
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-
-  wam-server:
-    depends_on:
-      - mysql
-
-    container_name: wam-server
-    build:
-      context: ./backend/
-
-    environment:
-      DB_HOST: "mysql"
-      DB_USER: "ghost"
-      DB_PASSWORD: "ghost"
-      PORT: 3000
-
-    ports:
-      - "3000:3000"
-    
-    networks:
-      - wam-app
-
-    restart: always
-
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-  
-  wam-client:
-    depends_on:
-      - mysql
-      - wam-server
-
-    container_name: wam-client
+  frontend:
     build:
       context: .
-
+      dockerfile: Dockerfile.frontend
     ports:
       - "8080:8080"
+    depends_on:
+      - backend
 
-    networks:
-      - wam-app
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DB_HOST=db
+      - DB_USER=ghost
+      - DB_PASSWORD=ghost
+    depends_on:
+      - db
 
-    restart: always
-
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=worker_attendance_management
+      - MYSQL_USER=ghost
+      - MYSQL_PASSWORD=ghost
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
 
 volumes:
-  mysql_data:
-
-networks:
-  wam-app:
+  mysql_data: 
