@@ -3,8 +3,8 @@ version: '3.8'
 services:
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
     ports:
       - "8080:8080"
     depends_on:
@@ -12,8 +12,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ..
+      dockerfile: docker/Dockerfile.backend
     ports:
       - "3000:3000"
     environment:
@@ -34,7 +34,7 @@ services:
       - MYSQL_PASSWORD=ghost
       - MYSQL_ROOT_PASSWORD=root
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
 
 volumes:
